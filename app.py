@@ -297,7 +297,7 @@ with tab2:
     col2.metric("Жинлэсэн өрхийн тоо", f"{weighted_households:,.0f}")
     col3.metric("Жинлэсэн дундаж орлого", f"{mean_income:,.0f} ₮")
     col4.metric("Дундаж давхарга", f"{middle_share:.2f}%")
-    col5.metric("Төрөл бүрийн тэгш бус байдал", f"{gini_index:.4f}")
+    col5.metric("Орлогын тэгш бус байдал", f"{gini_index:.4f}")
     
     st.divider()
     
