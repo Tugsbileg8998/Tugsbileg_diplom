@@ -19,6 +19,7 @@ from scipy import stats
 st.set_page_config(page_title="Өгөгдлийн танилцуулга", layout="wide")
 
 FILE_PATH = "dashboard.xlsx"
+MONTHS_PER_YEAR = 12
 
 @st.cache_data
 def load_data():
@@ -49,6 +50,18 @@ def load_data():
 
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    monthly_income_cols = [
+        "Цалин, хөлс",
+        "Тэтгэвэр, тэтгэмж болон бусад",
+        "Үйлдвэрлэл үйлчилгээ",
+        "Бэлэг тусламж болон өөрийн аж ахуйгаас хэрэглэсэн",
+        "Нэрлэсэн  орлого",
+        "Бодит орлого (2015 үнэ, ₮)"
+    ]
+
+    for col in monthly_income_cols:
+        df[col] = df[col] / MONTHS_PER_YEAR
 
     df = df.dropna(subset=["Он", "Өрхийн жин", "Нэрлэсэн  орлого"])
     df["Он"] = df["Он"].astype(int)
@@ -247,7 +260,7 @@ def weighted_kurtosis(values, weights):
 df = load_data()
 
 st.title("Монгол Улсын дундаж давхаргын тооцоолол")
-st.caption("Жинлэсэн статистик, тэнцвэржүүлсэн орлогын арга")
+st.caption("Жинлэсэн статистик, сарын тэнцвэржүүлсэн орлогын арга")
 
 years = sorted(df["Он"].dropna().unique())
 
@@ -261,6 +274,12 @@ tab1, tab2, tab3 = st.tabs(["Жилүүдийн харьцуулалт", "Дун
 
 with tab2:
     st.header("Дундаж давхарга")
+    st.info(
+        "Тэнцвэржүүлсэн орлого гэдэг нь өрхийн сарын нэрлэсэн орлогыг өрхийн "
+        "гишүүдийн бүтэц, хэрэгцээний ялгааг харгалзсан жингээр хуваасан "
+        "үзүүлэлт юм. Өрхийн гишүүдийн жинг тэргүүлэх насанд хүрсэн хүн 1.0, "
+        "бусад насанд хүрсэн хүн 0.5, 14-с доош хүүхэд 0.3 хэмээн тооцов."
+    )
     
     data = df[df["Он"] == selected_year].copy()
     data = data.dropna(subset=["Нэрлэсэн  орлого", "Тэнцвэржүүлсэн орлого", "Өрхийн жин"])
@@ -295,17 +314,17 @@ with tab2:
     
     col1.metric("Он", f"{selected_year}")
     col2.metric("Жинлэсэн өрхийн тоо", f"{weighted_households:,.0f}")
-    col3.metric("Жинлэсэн дундаж орлого", f"{mean_income:,.0f} ₮")
+    col3.metric("Сарын жинлэсэн дундаж орлого", f"{mean_income:,.0f} ₮")
     col4.metric("Дундаж давхарга", f"{middle_share:.2f}%")
     col5.metric("Орлогын тэгш бус байдал", f"{gini_index:.4f}")
     
     st.divider()
     
-    st.subheader("Тэнцвэржүүлсэн орлогын босго утгууд")
+    st.subheader("Сарын тэнцвэржүүлсэн орлогын босго утгууд")
     
     threshold_df = pd.DataFrame({
         "Үзүүлэлт": [
-            "Жинлэсэн медиан тэнцвэржүүлсэн орлого",
+            "Сарын жинлэсэн медиан тэнцвэржүүлсэн орлого",
             "Доод босго (75%)",
             "Дээд босго (200%)"
         ],
@@ -396,7 +415,7 @@ with tab2:
     st.plotly_chart(fig_lorenz, use_container_width=True)
 
 with tab1:
-    st.header("Жилүүдийн харьцуулалт")
+    st.header("Сарын үзүүлэлтийн харьцуулалт")
     
     yearly_stats = []
     
@@ -408,11 +427,11 @@ with tab1:
             yearly_stats.append({
                 "Он": year,
                 "Өрхийн тоо": int(year_data["Өрхийн жин"].sum()),
-                "Дундаж орлого (₮)": round(weighted_mean(year_data["Нэрлэсэн  орлого"], year_data["Өрхийн жин"]), 0),
-                "Медиан орлого (₮)": round(weighted_median(year_data["Нэрлэсэн  орлого"], year_data["Өрхийн жин"]), 0),
+                "Сарын дундаж орлого (₮)": round(weighted_mean(year_data["Нэрлэсэн  орлого"], year_data["Өрхийн жин"]), 0),
+                "Сарын медиан орлого (₮)": round(weighted_median(year_data["Нэрлэсэн  орлого"], year_data["Өрхийн жин"]), 0),
                 "Стандарт хазайлт": round(weighted_std(year_data["Нэрлэсэн  орлого"], year_data["Өрхийн жин"]), 0),
-                "Дундаж тэнцвэржүүлсэн (₮)": round(weighted_mean(year_data["Тэнцвэржүүлсэн орлого"], year_data["Өрхийн жин"]), 0),
-                "Медиан тэнцвэржүүлсэн (₮)": round(weighted_median(year_data["Тэнцвэржүүлсэн орлого"], year_data["Өрхийн жин"]), 0),
+                "Сарын дундаж тэнцвэржүүлсэн (₮)": round(weighted_mean(year_data["Тэнцвэржүүлсэн орлого"], year_data["Өрхийн жин"]), 0),
+                "Сарын медиан тэнцвэржүүлсэн (₮)": round(weighted_median(year_data["Тэнцвэржүүлсэн орлого"], year_data["Өрхийн жин"]), 0),
                 "Жини коэффициент": round(weighted_gini(year_data["Тэнцвэржүүлсэн орлого"], year_data["Өрхийн жин"]), 4)
             })
     
@@ -425,8 +444,8 @@ with tab1:
         fig_trend1 = px.line(
             yearly_df,
             x="Он",
-            y="Дундаж орлого (₮)",
-            title="Өрхийн жилийн тэнцвэржүүлсэн орлого",
+            y="Сарын дундаж орлого (₮)",
+            title="Өрхийн сарын дундаж орлого",
             markers=True
         )
         fig_trend1.update_yaxes(tickformat=",.0f")
@@ -443,7 +462,7 @@ with tab1:
         fig_trend2.update_traces(hoverinfo='skip')
         st.plotly_chart(fig_trend2, use_container_width=True)
 
-    st.subheader("Жилүүдийн өрхийн орлогын эх үүсвэрийн бүтэц")
+    st.subheader("Жилүүдийн өрхийн сарын орлогын эх үүсвэрийн бүтэц")
     income_sources = [
         "Цалин, хөлс",
         "Тэтгэвэр, тэтгэмж болон бусад",
@@ -479,7 +498,7 @@ with tab1:
             x="Он",
             y="Хувь (%)",
             color="Эх үүсвэр",
-            title="Жилүүдийн өрхийн орлогын эх үүсвэрийн бүтэц",
+            title="Жилүүдийн өрхийн сарын орлогын эх үүсвэрийн бүтэц",
             labels={"Хувь (%)": "Хувь (%)"}
         )
         fig_source.update_layout(barmode="stack")
@@ -487,7 +506,7 @@ with tab1:
         st.plotly_chart(fig_source, use_container_width=True)
 
 with tab3:
-    st.header("Сонгосон онын дэлгэрэнгүй өгөгдлийн танилцуулга")
+    st.header("Сонгосон оны сарын дэлгэрэнгүй өгөгдлийн танилцуулга")
     
     data = df[df["Он"] == selected_year].copy()
     data = data.dropna(subset=["Нэрлэсэн  орлого", "Тэнцвэржүүлсэн орлого", "Өрхийн жин"])
@@ -550,8 +569,8 @@ with tab3:
             
             income_stats.append({
                 "Эх үүсвэр": source_name,
-                "Дундаж (₮)": round(weighted_mean(values, weights), 0),
-                "Медиан (₮)": round(weighted_median(values, weights), 0),
+                "Сарын дундаж (₮)": round(weighted_mean(values, weights), 0),
+                "Сарын медиан (₮)": round(weighted_median(values, weights), 0),
                 "Стандарт хазайлт": round(weighted_std(values, weights), 0),
                 "Хамгийн их (₮)": round(values.max(), 0)
             })
@@ -562,22 +581,22 @@ with tab3:
     fig_income = px.bar(
         income_source_df,
         x="Эх үүсвэр",
-        y="Дундаж (₮)",
-        title="Орлогын эх үүсвэрийн жинлэсэн дундаж"
+        y="Сарын дундаж (₮)",
+        title="Орлогын эх үүсвэрийн сарын жинлэсэн дундаж"
     )
     fig_income.update_yaxes(tickformat=",.0f")
     st.plotly_chart(fig_income, use_container_width=True)
 
 st.divider()
 
-st.subheader("📥 Өгөгдлийг татах")
+st.subheader("📥 Сарын өгөгдлийг татах")
 
 download_data = df[df["Он"] == selected_year].copy()
 csv = download_data.to_csv(index=False).encode("utf-8-sig")
 
 st.download_button(
-    label=f"📊 CSV татах ({selected_year})",
+    label=f"📊 Сарын CSV татах ({selected_year})",
     data=csv,
-    file_name=f"өрхийн орлогын өгөгдөл_{selected_year}.csv",
+    file_name=f"өрхийн_сарын_орлогын_өгөгдөл_{selected_year}.csv",
     mime="text/csv"
 )
